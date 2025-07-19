@@ -137,10 +137,16 @@ class UltraFastBot:
         
         self.bot_user_id = None
         self.shutdown_flag = False
+        
+        # Store the main loop for proper shutdown
+        self.loop = None
     
     async def start(self):
         """Start the bot with optimal performance settings"""
         try:
+            # Store the current loop for shutdown
+            self.loop = asyncio.get_running_loop()
+            
             # Create persistent HTTP session with optimized settings
             connector = aiohttp.TCPConnector(
                 limit=100,           # Connection pool size
@@ -168,6 +174,7 @@ class UltraFastBot:
             print(f"🚀 Fast bot started as @{me.username}")
             print(f"⚡ Response time optimized for maximum speed")
             print(f"🔑 {len(self.config.api_keys)} API keys loaded")
+            print(f"💬 Bot will respond to DMs and group mentions")
             
             # Save session if new
             if not self.config.string_session:
@@ -185,12 +192,18 @@ class UltraFastBot:
             def shutdown_handler(signum, frame):
                 print("\n🛑 Shutting down...")
                 self.shutdown_flag = True
+                # Schedule the shutdown coroutine
+                if self.loop and self.loop.is_running():
+                    asyncio.create_task(self.shutdown())
             
             signal.signal(signal.SIGINT, shutdown_handler)
             signal.signal(signal.SIGTERM, shutdown_handler)
             
             print("✅ Bot is running! Press Ctrl+C to stop")
-            await self.client.run_until_disconnected()
+            
+            # Keep running until shutdown
+            while not self.shutdown_flag:
+                await asyncio.sleep(1)
             
         except Exception as e:
             logger.error(f"Startup error: {e}")
@@ -198,12 +211,17 @@ class UltraFastBot:
         finally:
             await self.cleanup()
     
+    async def shutdown(self):
+        """Graceful shutdown"""
+        print("🔄 Initiating graceful shutdown...")
+        self.shutdown_flag = True
+        await asyncio.sleep(0.1)  # Give any ongoing operations a chance to complete
+    
     async def process_message(self, event):
-        """Ultra-fast message processing with minimal checks"""
+        """Ultra-fast message processing with DM support"""
         try:
             # Fast exit conditions
             if (self.shutdown_flag or 
-                not event.is_group or 
                 not event.raw_text or 
                 event.sender_id == self.bot_user_id):
                 return
@@ -216,16 +234,25 @@ class UltraFastBot:
             user_id = event.sender_id
             chat_id = event.chat_id
             username = sender.username
+            is_group = event.is_group
             
             # Always update context (minimal overhead)
             self.context.add_message(user_id, chat_id, text, username)
             
-            # Fast mention/reply detection
-            is_mention = bool(self.bot_mention_pattern.search(text))
-            is_reply = (event.is_reply and 
-                       (await event.get_reply_message()).sender_id == self.bot_user_id)
+            # Determine if bot should respond
+            should_respond = False
             
-            if not (is_mention or is_reply):
+            if is_group:
+                # In groups: respond to mentions or replies only
+                is_mention = bool(self.bot_mention_pattern.search(text))
+                is_reply = (event.is_reply and 
+                           (await event.get_reply_message()).sender_id == self.bot_user_id)
+                should_respond = is_mention or is_reply
+            else:
+                # In DMs: respond to all messages
+                should_respond = True
+            
+            if not should_respond:
                 return
             
             # Fast rate limiting
@@ -233,16 +260,22 @@ class UltraFastBot:
                 return  # Silent rate limiting for speed
             
             # Process query asynchronously without blocking
-            asyncio.create_task(self.handle_query(event, user_id, chat_id, text, username))
+            asyncio.create_task(self.handle_query(event, user_id, chat_id, text, username, is_group))
             
         except Exception as e:
             logger.error(f"Message processing error: {e}")
     
-    async def handle_query(self, event, user_id: int, chat_id: int, text: str, username: str):
+    async def handle_query(self, event, user_id: int, chat_id: int, text: str, username: str, is_group: bool):
         """Handle user query with maximum speed optimization"""
         try:
             # Fast query extraction
-            query = self.bot_mention_pattern.sub('', text).strip()
+            if is_group:
+                # Remove bot mention from group messages
+                query = self.bot_mention_pattern.sub('', text).strip()
+            else:
+                # Use full text in DMs
+                query = text.strip()
+                
             if not query:
                 return
             
@@ -321,11 +354,15 @@ class UltraFastBot:
     
     async def cleanup(self):
         """Fast cleanup"""
-        if self.session:
-            await self.session.close()
-        if self.client.is_connected():
-            await self.client.disconnect()
-        print("🧹 Cleanup completed")
+        print("🧹 Starting cleanup...")
+        try:
+            if self.session:
+                await self.session.close()
+            if self.client.is_connected():
+                await self.client.disconnect()
+            print("✅ Cleanup completed")
+        except Exception as e:
+            logger.error(f"Cleanup error: {e}")
 
 # Ultra-fast main function
 async def main():
