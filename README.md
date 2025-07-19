@@ -20,8 +20,8 @@ A Telegram bot that uses OpenRouter's DeepSeek AI to respond intelligently in DM
 ### 1. Clone the Repo
 
 ```bash
-git clone https://github.com/yourname/ultrafast-bot.git
-cd ultrafast-bot
+git clone https://github.com/HackerXMindset/Telegram-Deepseek-chatbot.git
+cd Telegram-Deepseek-chatbot.git
 ````
 
 ### 2. Install Dependencies
@@ -43,7 +43,8 @@ API_KEYS=your_openrouter_api_key_1,your_api_key_2 (comma-separated)
 ```
 
 > 📌 Get your `API_ID` and `API_HASH` from [https://my.telegram.org](https://my.telegram.org)
-> 🔑 Get your OpenRouter API key(s) from [https://openrouter.ai](https://openrouter.ai)
+
+> 🔑 Get your OpenRouter API key(s) from [https://openrouter.ai](https://openrouter.ai/deepseek/deepseek-r1:free)
 
 ### 4. Run the Bot
 
