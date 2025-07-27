@@ -1,0 +1,23 @@
+[app]
+name = "cleanai-bot"
+
+[services.bot]
+type = "web"
+name = "cleanai-bot-service"
+
+[services.bot.build]
+type = "buildpack"
+build_command = "pip install -r requirements.txt"
+
+[services.bot.deploy]
+command = "python cleanai_bot.py"
+
+[services.bot.instance]
+type = "nano"
+
+[services.bot.ports]
+port = 8000
+protocol = "http"
+
+[services.bot.env]
+# Environment variables will be set in Koyeb dashboard
