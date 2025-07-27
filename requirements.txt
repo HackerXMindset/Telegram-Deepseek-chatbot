@@ -1,3 +1,5 @@
-telethon
-python-dotenv
-aiohttp
+telethon==1.36.0
+python-dotenv==1.0.0
+aiohttp==3.9.1
+requests==2.31.0
+asyncio-mqtt==0.16.1
